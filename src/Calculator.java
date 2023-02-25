@@ -1,123 +1,61 @@
-import java.util.LinkedList;
-import java.util.Queue;
-import java.util.Scanner;
-import java.util.Stack;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.PrintWriter;
+import java.util.*;
 
 public class Calculator {
-    public void run(){
+    public void run() {
         Scanner sc = new Scanner(System.in);
-        System.out.println("Podaj wyrażenie do obliczenia");
-        String input = sc.next();
-        Queue<String> onp = toOnp(input);
+        System.out.println("Podaj ścieżkę");
+        String path = sc.next();
 
-        Stack<Float> stack = new Stack<>();
-        for(var x : onp){
-            if(isNumeric(x)){
-              stack.push(Float.parseFloat(x));
-            }
-            if(isOperator(x)){
-                float a = stack.pop();
-                float b = stack.pop();
-
-                stack.push(new Equation(a,b).calculate(Operation.of(x)));
-            }
+        File csvOutput = new File("wynik.csv");
+        Scanner file;
+        PrintWriter pw;
+        try {
+            file = new Scanner(new File(path));
+            pw = new PrintWriter(csvOutput);
+        } catch (FileNotFoundException e) {
+            System.out.println("Błąd - nie znaleziono pliku");
+            return;
         }
-        System.out.println(stack.pop());
-    }
 
-    public static Queue<String> toOnp(String equation){
-        StringBuilder number = new StringBuilder();
-        Queue<String> exit = new LinkedList<>();
-        Stack<Character> stack = new Stack<>();
+        while (file.hasNext()){
+            String equation = file.next();
+            float a = 0,b;
+            Operation o = Operation.ADDITION;
+            StringBuilder number = new StringBuilder();
 
-        for(int i = 0; i < equation.length(); i++){
-            if(isNumeric(equation.charAt(i)) || equation.charAt(i) == '.'){
-                number.append(equation.charAt(i));
-            }
-            if(isOperator(equation.charAt(i))){
-                if(number.length() > 0){
-                    exit.add(number.toString());
+            for (var item : equation.toCharArray()) {
+                if (isOperator(item)){
+                    o = Operation.of(String.valueOf(item));
+                    try{
+                        a = Float.parseFloat(number.toString());
+                    }catch (NumberFormatException e){
+                        System.out.println("Błąd - żle podana liczba");
+                        return;
+                    }
                     number.setLength(0);
                 }
 
-                if(!stack.empty()){
-                    while (getPriority(stack.peek()) >= getPriority(equation.charAt(i))) {
-                        exit.add(stack.pop().toString());
-                        if(stack.empty()){
-                            break;
-                        }
-                    }
-                }
-                stack.push(equation.charAt(i));
+                number.append(item);
             }
-            if(equation.charAt(i) == '('){
-                stack.push(equation.charAt(i));
+
+            try {
+                b = Float.parseFloat(number.toString());
+            }catch (NumberFormatException e){
+                System.out.println("Błąd - źle podana liczba");
+                return;
             }
-            if(equation.charAt(i) == ')'){
-                exit.add(number.toString());
-                number.setLength(0);
-                if(!stack.empty()){
-                    while (stack.peek() != '('){
-                        exit.add(stack.pop().toString());
-                        if(stack.empty()){
-                            break;
-                        }
-                    }
-                }
-            }
+
+
+            pw.println(equation + "=" + new Equation(a,b).calculate(o));
         }
-        exit.add(number.toString());
-
-        int size = stack.size();
-        for (int i = 0; i < size; i++) {
-            if (stack.peek() == '(' || stack.peek() == ')') {
-                stack.pop();
-                continue;
-            }
-            exit.add(String.valueOf(stack.pop()));
-        }
-
-        return exit;
+        pw.close();
     }
-
-    public static int getPriority(char operator){
-        return switch (operator) {
-            case 'r', '(' -> 0;
-            case '+', '-', ')' -> 1;
-            case '*', '/' -> 2;
-            default -> 100;
-        };
-    }
-    public static boolean isNumeric(char value) {
-        try{
-            Integer.parseInt(String.valueOf(value));
-            return true;
-        }catch(Exception e){
-            return false;
-        }
-    }
-
-    public static boolean isNumeric(String value) {
-        try{
-            Integer.parseInt(value);
-            return true;
-        }catch(Exception e){
-            return false;
-        }
-    }
-
     public static boolean isOperator(char value){
         try{
             Operation.of(String.valueOf(value));
-            return true;
-        }catch(Exception e){
-            return false;
-        }
-    }
-
-    public static boolean isOperator(String value){
-        try{
-            Operation.of(value);
             return true;
         }catch(Exception e){
             return false;

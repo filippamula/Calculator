@@ -16,8 +16,8 @@ public class Calculator {
               stack.push(Float.parseFloat(x));
             }
             if(isOperator(x)){
-                float a = stack.pop();
                 float b = stack.pop();
+                float a = stack.pop();
 
                 stack.push(new Equation(a,b).calculate(Operation.of(x)));
             }
